@@ -1,0 +1,41 @@
+version: v1.0
+name: Initial Pipeline
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: build
+    task:
+      jobs:
+        - name: build
+          commands:
+            - sem-version python 3.7
+            - checkout
+            - mkdir .pip_cache
+            - cache restore
+            - pip install --cache-dir .pip_cache -r requirements.txt
+            - cache store
+  - name: test
+    task:
+      prologue:
+        commands:
+          - sem-version python 3.7
+          - checkout
+          - cache restore
+          - pip3 install --cache-dir .pip_cache -r requirements.txt
+      jobs:
+        - name: unit_test
+          commands:
+            - cd martor_demo
+            - python3 manage.py makemigrations
+            - python3 manage.py migrate
+            - python3 manage.py test
+        - name: checklist
+          commands:
+            - cd martor_demo
+            - python manage.py check --deploy
+        - name: style_check
+          commands:
+            - pip3 install flake8
+            - flake8 martor_demo/ --max-line-length=127
